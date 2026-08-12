@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-violeta-oscuro: #662383;
+  --color-violeta-medio: #a46dcb;
+  --color-violeta-claro: #d0b2e0;
+  --color-violeta-blanco: #e8ddf6;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-violeta-blanco);
+    color: var(--color-violeta-oscuro);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: var(--color-violeta-medio);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-violeta-oscuro);
+  }
+  
+  .btn-secondary {
+    background-color: var(--color-violeta-claro);
+    color: var(--color-violeta-oscuro);
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-violeta-medio);
+    color: white;
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+}
