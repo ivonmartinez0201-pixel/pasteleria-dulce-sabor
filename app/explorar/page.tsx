@@ -1,4 +1,8 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import BotonReceta from '@/components/BotonReceta';
+import Buscador from '@/components/Buscador';
 
 type Meal = {
   idMeal: string;
@@ -7,79 +11,98 @@ type Meal = {
   strCountry?: string;
 };
 
-type ApiResponse = {
-  meals: Meal[] | null;
-};
+export default function ExplorarPage() {
+  const [recetas, setRecetas] = useState<Meal[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
 
-type MealDetailResponse = {
-  meals: Array<{
-    idMeal: string;
-    strMeal: string;
-    strCountry: string;
-  }> | null;
-};
+  const cargarRecetas = async (termino: string = '') => {
+    setCargando(true);
+    setError(null);
 
-async function getDesserts(): Promise<Meal[]> {
-  try {
-    const res = await fetch('https://www.themealdb.com/api/json/v1/1/filter.php?c=Dessert', {
-      cache: 'no-store',
-    });
+    try {
+      let url = 'https://www.themealdb.com/api/json/v1/1/filter.php?c=Dessert';
+      
+      if (termino) {
+        url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${termino}`;
+      }
 
-    if (!res.ok) {
-      throw new Error(`Error ${res.status}: ${res.statusText}`);
+      const res = await fetch(url, { cache: 'no-store' });
+
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const meals = data.meals || [];
+
+      const mealsWithCountry = await Promise.all(
+        meals.slice(0, 20).map(async (meal: Meal) => {
+          try {
+            const detailRes = await fetch(
+              `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`,
+              { cache: 'force-cache' }
+            );
+            if (!detailRes.ok) return { ...meal, strCountry: 'Desconocido' };
+            const detailData = await detailRes.json();
+            return {
+              ...meal,
+              strCountry: detailData.meals?.[0]?.strCountry || 'Desconocido',
+            };
+          } catch {
+            return { ...meal, strCountry: 'Desconocido' };
+          }
+        })
+      );
+
+      setRecetas(mealsWithCountry);
+    } catch (error) {
+      console.error('Error al obtener recetas:', error);
+      setError('No pudimos cargar las recetas. Intenta más tarde.');
+      setRecetas([]);
+    } finally {
+      setCargando(false);
     }
+  };
 
-    const data: ApiResponse = await res.json();
-    const meals = data.meals || [];
+  const handleSearch = (termino: string) => {
+    setTerminoBusqueda(termino);
+    cargarRecetas(termino);
+  };
 
-    const mealsWithCountry = await Promise.all(
-      meals.slice(0, 20).map(async (meal) => {
-        try {
-          const detailRes = await fetch(
-            `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`,
-            { cache: 'force-cache' }
-          );
-          if (!detailRes.ok) return { ...meal, strCountry: 'Desconocido' };
-          const detailData: MealDetailResponse = await detailRes.json();
-          return {
-            ...meal,
-            strCountry: detailData.meals?.[0]?.strCountry || 'Desconocido',
-          };
-        } catch {
-          return { ...meal, strCountry: 'Desconocido' };
-        }
-      })
-    );
-
-    return mealsWithCountry;
-  } catch (error) {
-    console.error('Error al obtener recetas:', error);
-    return [];
-  }
-}
-
-export default async function ExplorarPage() {
-  const desserts = await getDesserts();
+  useEffect(() => {
+    cargarRecetas('');
+  }, []);
 
   return (
     <div>
       <h1 className="text-3xl font-bold text-[#662383] mb-6">🍰 Explorar Recetas de Postres</h1>
-      <p className="text-[#662383]/60 mb-8">
+      <p className="text-[#662383]/60 mb-6">
         Descubre recetas de postres de todo el mundo, cortesía de TheMealDB
       </p>
 
-      {desserts.length === 0 ? (
+      <div className="mb-8">
+        <Buscador onSearch={handleSearch} />
+      </div>
+
+      {cargando ? (
+        <div className="text-center py-12">
+          <p className="text-[#662383]/60">⏳ Cargando recetas...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-[#d0b2e0]/20 rounded-xl">
+          <p className="text-[#662383]/60 text-lg">{error}</p>
+        </div>
+      ) : recetas.length === 0 ? (
         <div className="text-center py-12 bg-[#d0b2e0]/20 rounded-xl">
           <p className="text-[#662383]/60 text-lg">
-            😅 No pudimos cargar las recetas en este momento. Intenta más tarde.
-          </p>
-          <p className="text-[#662383]/40 text-sm mt-2">
-            (Esto puede deberse a que la API externa no está disponible)
+            {terminoBusqueda ? '😅 No encontramos recetas con ese nombre.' : '😅 No hay recetas disponibles.'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {desserts.map((dessert) => (
+          {recetas.map((dessert) => (
             <div
               key={dessert.idMeal}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
@@ -104,14 +127,13 @@ export default async function ExplorarPage() {
         </div>
       )}
 
-      <div className="mt-8 p-4 bg-[#d0b2e0]/30 rounded-lg">
-        <p className="text-sm text-[#662383]/70">
-          📝 Datos proporcionados por <strong>TheMealDB</strong> - API pública gratuita
-        </p>
-        <p className="text-xs text-[#662383]/50 mt-1">
-          Mostrando {desserts.length} recetas
-        </p>
-      </div>
+      {!cargando && !error && recetas.length > 0 && (
+        <div className="mt-8 p-4 bg-[#d0b2e0]/30 rounded-lg">
+          <p className="text-sm text-[#662383]/70">
+            📝 Mostrando {recetas.length} recetas {terminoBusqueda && `para "${terminoBusqueda}"`}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
