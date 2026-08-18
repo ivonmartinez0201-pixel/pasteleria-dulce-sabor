@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [misPostres, setMisPostres] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -29,11 +30,35 @@ export default function DashboardPage() {
         .single();
 
       setProfile(profileData);
+
+      const { data: postresData } = await supabase
+        .from('postres')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      setMisPostres(postresData || []);
       setLoading(false);
     };
 
     getUser();
   }, [router]);
+
+  const handleEliminar = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este postre?')) return;
+
+    const { error } = await supabase
+      .from('postres')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Error al eliminar: ' + error.message);
+      return;
+    }
+
+    setMisPostres(misPostres.filter(p => p.id !== id));
+  };
 
   if (loading) {
     return (
@@ -101,6 +126,34 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {rol === 'repostero' && misPostres.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-[#662383] mb-4">📝 Mis Postres</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {misPostres.map((postre) => (
+              <div key={postre.id} className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+                <h3 className="font-semibold text-[#662383]">{postre.nombre}</h3>
+                <p className="text-sm text-[#662383]/60">${postre.precio}</p>
+                <div className="flex gap-2 mt-3">
+                  <Link
+                    href={`/dashboard/editar/${postre.id}`}
+                    className="flex-1 text-center bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    ✏️ Editar
+                  </Link>
+                  <button
+                    onClick={() => handleEliminar(postre.id)}
+                    className="flex-1 bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                  >
+                    🗑️ Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
