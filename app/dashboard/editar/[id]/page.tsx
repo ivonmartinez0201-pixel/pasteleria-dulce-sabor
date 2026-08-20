@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
+import { editarPostre } from '@/app/actions/postres';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,7 +10,10 @@ type Postre = {
   id: number;
   nombre: string;
   descripcion: string;
-  precio: number;
+  dificultad: string;
+  tiempo_preparacion: string;
+  experiencia: string;
+  solucion: string;
   imagen_url: string | null;
   categoria_id: number | null;
 };
@@ -31,16 +35,15 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
   const [postre, setPostre] = useState<Postre | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
 
-      // Cargar categorías
       const { data: categoriasData } = await supabase
         .from('categorias')
         .select('*')
@@ -48,15 +51,14 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
 
       setCategorias(categoriasData || []);
 
-      // Cargar postre
       const { data: postreData, error: postreError } = await supabase
         .from('postres')
         .select('*')
         .eq('id', postreId)
-        .single();
+        .maybeSingle();
 
-      if (postreError) {
-        setError('Postre no encontrado');
+      if (postreError || !postreData) {
+        setError('Publicación no encontrada');
         setLoading(false);
         return;
       }
@@ -68,32 +70,19 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
     loadData();
   }, [postreId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!postre) return;
-
-    setSaving(true);
+  const handleSubmit = async (formData: FormData) => {
     setError(null);
-
-    const { error: updateError } = await supabase
-      .from('postres')
-      .update({
-        nombre: postre.nombre,
-        descripcion: postre.descripcion,
-        precio: postre.precio,
-        imagen_url: postre.imagen_url || null,
-        categoria_id: postre.categoria_id || null,
-      })
-      .eq('id', postre.id);
-
-    if (updateError) {
-      setError(updateError.message);
-      setSaving(false);
-      return;
-    }
-
-    setSuccess(true);
-    setTimeout(() => router.push('/dashboard'), 1500);
+    startTransition(async () => {
+      try {
+        await editarPostre(formData);
+        setSuccess(true);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
+      } catch (err: any) {
+        setError(err.message || 'Error al editar la publicación');
+      }
+    });
   };
 
   if (loading) {
@@ -118,7 +107,9 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
   if (success) {
     return (
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8 text-center">
-        <h2 className="text-2xl font-bold text-green-600">✅ ¡Postre actualizado!</h2>
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+          <p className="font-bold">✅ ¡Publicación actualizada con éxito!</p>
+        </div>
         <p className="text-[#662383]/60 mt-4">Redirigiendo al dashboard...</p>
       </div>
     );
@@ -126,15 +117,17 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
-      <h1 className="text-2xl font-bold text-[#662383] text-center">✏️ Editar Postre</h1>
+      <h1 className="text-2xl font-bold text-[#662383] text-center">✏️ Editar Experiencia</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+      <form action={handleSubmit} className="space-y-4 mt-6">
+        <input type="hidden" name="id" value={postre?.id} />
+
         <div>
-          <label className="block text-sm font-medium text-[#662383]">Nombre *</label>
+          <label className="block text-sm font-medium text-[#662383]">Nombre del Postre *</label>
           <input
             type="text"
-            value={postre?.nombre || ''}
-            onChange={(e) => setPostre({ ...postre!, nombre: e.target.value })}
+            name="nombre"
+            defaultValue={postre?.nombre || ''}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
             required
           />
@@ -143,35 +136,42 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
         <div>
           <label className="block text-sm font-medium text-[#662383]">Descripción</label>
           <textarea
-            value={postre?.descripcion || ''}
-            onChange={(e) => setPostre({ ...postre!, descripcion: e.target.value })}
-            rows={3}
+            name="descripcion"
+            rows={2}
+            defaultValue={postre?.descripcion || ''}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#662383]">Precio *</label>
-          <input
-            type="number"
-            step="0.01"
-            value={postre?.precio || ''}
-            onChange={(e) => setPostre({ ...postre!, precio: parseFloat(e.target.value) })}
+          <label className="block text-sm font-medium text-[#662383]">Dificultad</label>
+          <select
+            name="dificultad"
+            defaultValue={postre?.dificultad || 'Media'}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
-            required
+          >
+            <option value="Fácil">Fácil</option>
+            <option value="Media">Media</option>
+            <option value="Difícil">Difícil</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[#662383]">Tiempo de Preparación</label>
+          <input
+            type="text"
+            name="tiempo_preparacion"
+            defaultValue={postre?.tiempo_preparacion || ''}
+            placeholder="Ej: 2 horas"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[#662383]">Categoría</label>
           <select
-            value={postre?.categoria_id || ''}
-            onChange={(e) =>
-              setPostre({
-                ...postre!,
-                categoria_id: e.target.value ? parseInt(e.target.value) : null,
-              })
-            }
+            name="categoria_id"
+            defaultValue={postre?.categoria_id || ''}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
           >
             <option value="">Seleccionar categoría</option>
@@ -184,29 +184,51 @@ export default function EditarPostrePage({ params }: { params: Promise<Params> }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#662383]">URL de Imagen</label>
+          <label className="block text-sm font-medium text-[#662383]">Mi Experiencia</label>
+          <textarea
+            name="experiencia"
+            rows={3}
+            defaultValue={postre?.experiencia || ''}
+            placeholder="¿Qué retos tuviste al hacer este postre?"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[#662383]">Cómo lo resolví</label>
+          <textarea
+            name="solucion"
+            rows={3}
+            defaultValue={postre?.solucion || ''}
+            placeholder="¿Cómo solucionaste los retos?"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[#662383]">URL de la Foto</label>
           <input
             type="url"
-            value={postre?.imagen_url || ''}
-            onChange={(e) => setPostre({ ...postre!, imagen_url: e.target.value })}
-            placeholder="https://ejemplo.com/imagen.jpg"
+            name="imagen_url"
+            defaultValue={postre?.imagen_url || ''}
+            placeholder="https://ejemplo.com/foto-postre.jpg"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
           />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+            <p>{error}</p>
           </div>
         )}
 
         <div className="flex gap-4">
           <button
             type="submit"
-            disabled={saving}
+            disabled={isPending}
             className="flex-1 bg-[#a46dcb] text-white py-2 rounded-lg hover:bg-[#662383] transition-colors disabled:opacity-50"
           >
-            {saving ? '⏳ Guardando...' : '💾 Guardar Cambios'}
+            {isPending ? '⏳ Guardando...' : '💾 Guardar Cambios'}
           </button>
           <Link
             href="/dashboard"
