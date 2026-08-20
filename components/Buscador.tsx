@@ -25,7 +25,7 @@ export default function Buscador({ onSearch }: BuscadorProps) {
         type="text"
         value={termino}
         onChange={(e) => setTermino(e.target.value)}
-        placeholder="🔍 Buscar postres..."
+        placeholder="🔍 Buscar recetas..."
         className="flex-1 px-4 py-2 border border-[#d0b2e0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a46dcb]"
       />
       <button
