@@ -3,7 +3,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -32,7 +31,10 @@ export async function crearPostre(formData: FormData) {
   
   const nombre = formData.get('nombre') as string;
   const descripcion = formData.get('descripcion') as string;
-  const precio = parseFloat(formData.get('precio') as string);
+  const dificultad = formData.get('dificultad') as string;
+  const tiempo_preparacion = formData.get('tiempo_preparacion') as string;
+  const experiencia = formData.get('experiencia') as string;
+  const solucion = formData.get('solucion') as string;
   const imagen_url = formData.get('imagen_url') as string;
   const categoria_id = formData.get('categoria_id') as string;
 
@@ -47,19 +49,21 @@ export async function crearPostre(formData: FormData) {
     .insert({
       nombre,
       descripcion,
-      precio,
+      dificultad,
+      tiempo_preparacion,
+      experiencia,
+      solucion,
       imagen_url: imagen_url || null,
       user_id: user.id,
       categoria_id: categoria_id ? parseInt(categoria_id) : null,
     });
 
   if (error) {
-    throw new Error('Error al crear el postre: ' + error.message);
+    throw new Error('Error al crear la publicación: ' + error.message);
   }
 
   revalidatePath('/postres');
   revalidatePath('/dashboard');
-  redirect('/dashboard');
 }
 
 export async function editarPostre(formData: FormData) {
@@ -68,7 +72,10 @@ export async function editarPostre(formData: FormData) {
   const id = parseInt(formData.get('id') as string);
   const nombre = formData.get('nombre') as string;
   const descripcion = formData.get('descripcion') as string;
-  const precio = parseFloat(formData.get('precio') as string);
+  const dificultad = formData.get('dificultad') as string;
+  const tiempo_preparacion = formData.get('tiempo_preparacion') as string;
+  const experiencia = formData.get('experiencia') as string;
+  const solucion = formData.get('solucion') as string;
   const imagen_url = formData.get('imagen_url') as string;
   const categoria_id = formData.get('categoria_id') as string;
 
@@ -83,7 +90,10 @@ export async function editarPostre(formData: FormData) {
     .update({
       nombre,
       descripcion,
-      precio,
+      dificultad,
+      tiempo_preparacion,
+      experiencia,
+      solucion,
       imagen_url: imagen_url || null,
       categoria_id: categoria_id ? parseInt(categoria_id) : null,
     })
@@ -91,12 +101,11 @@ export async function editarPostre(formData: FormData) {
     .eq('user_id', user.id);
 
   if (error) {
-    throw new Error('Error al editar el postre: ' + error.message);
+    throw new Error('Error al editar la publicación: ' + error.message);
   }
 
   revalidatePath('/postres');
   revalidatePath('/dashboard');
-  redirect('/dashboard');
 }
 
 export async function eliminarPostre(formData: FormData) {
@@ -117,10 +126,9 @@ export async function eliminarPostre(formData: FormData) {
     .eq('user_id', user.id);
 
   if (error) {
-    throw new Error('Error al eliminar el postre: ' + error.message);
+    throw new Error('Error al eliminar la publicación: ' + error.message);
   }
 
   revalidatePath('/postres');
   revalidatePath('/dashboard');
-  redirect('/dashboard');
 }
