@@ -34,6 +34,19 @@ export default function Navbar() {
     router.push('/');
   };
 
+  const navLinks = [
+    { href: '/', label: 'Inicio' },
+    { href: '/postres', label: 'Experiencias' },
+    { href: '/explorar', label: 'Explorar' },
+  ];
+
+  const authLinks = user ? [
+    { href: '/dashboard', label: 'Dashboard' },
+  ] : [
+    { href: '/login', label: 'Login' },
+    { href: '/register', label: 'Registro' },
+  ];
+
   return (
     <nav className="bg-violeta-oscuro text-white shadow-lg">
       <div className="container mx-auto px-4">
@@ -43,23 +56,28 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="/" className={`hover:text-violeta-claro transition-colors ${pathname === '/' ? 'text-violeta-claro font-semibold' : ''}`}>
-              Inicio
-            </Link>
-            <Link href="/postres" className={`hover:text-violeta-claro transition-colors ${pathname === '/postres' ? 'text-violeta-claro font-semibold' : ''}`}>
-              Postres
-            </Link>
-            <Link href="/explorar" className={`hover:text-violeta-claro transition-colors ${pathname === '/explorar' ? 'text-violeta-claro font-semibold' : ''}`}>
-              Explorar
-            </Link>
-
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`hover:text-violeta-claro transition-colors ${pathname === link.href ? 'text-violeta-claro font-semibold' : ''}`}
+              >
+                {link.label}
+              </Link>
+            ))}
             {!loading && (
               <>
                 {user ? (
                   <>
-                    <Link href="/dashboard" className={`hover:text-violeta-claro transition-colors ${pathname === '/dashboard' ? 'text-violeta-claro font-semibold' : ''}`}>
-                      Dashboard
-                    </Link>
+                    {authLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`hover:text-violeta-claro transition-colors ${pathname === link.href ? 'text-violeta-claro font-semibold' : ''}`}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
                     <span className="text-sm text-violeta-claro">
                       👤 {user.email}
                     </span>
@@ -71,14 +89,15 @@ export default function Navbar() {
                     </button>
                   </>
                 ) : (
-                  <>
-                    <Link href="/login" className={`hover:text-violeta-claro transition-colors ${pathname === '/login' ? 'text-violeta-claro font-semibold' : ''}`}>
-                      Login
+                  authLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`hover:text-violeta-claro transition-colors ${pathname === link.href ? 'text-violeta-claro font-semibold' : ''}`}
+                    >
+                      {link.label}
                     </Link>
-                    <Link href="/register" className={`hover:text-violeta-claro transition-colors ${pathname === '/register' ? 'text-violeta-claro font-semibold' : ''}`}>
-                      Registro
-                    </Link>
-                  </>
+                  ))
                 )}
               </>
             )}
