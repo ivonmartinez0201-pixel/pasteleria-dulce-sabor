@@ -2,7 +2,7 @@
 
 Una plataforma donde los reposteros comparten sus experiencias, retos y soluciones, y los amantes de la repostería aprenden de ellos.
 
-🔗 **Demo en vivo:** https://pasteleria-dulce-sabor.vercel.app
+🔗 **Demo en vivo:** https://pasteleria-dulce-sabor-eight.vercel.app/
 
 ---
 
@@ -10,7 +10,7 @@ Una plataforma donde los reposteros comparten sus experiencias, retos y solucion
 
 | Página de inicio | Listado de experiencias | Dashboard de repostero |
 |------------------|-------------------------|------------------------|
-| ![Inicio](/screenshots/inicio.png) | ![Experiencias](/screenshots/experiencias.png) | ![Dashboard](/screenshots/dashboard.png) |
+| ![Inicio](https://raw.githubusercontent.com/ivonmartinez0201-pixel/pasteleria-dulce-sabor/main/public/screenshots/inicio.png) | ![Experiencias](https://raw.githubusercontent.com/ivonmartinez0201-pixel/pasteleria-dulce-sabor/main/public/screenshots/experiencias.png) | ![Dashboard](https://raw.githubusercontent.com/ivonmartinez0201-pixel/pasteleria-dulce-sabor/main/public/screenshots/dashboard.png) |
 
 ---
 
